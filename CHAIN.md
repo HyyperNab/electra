@@ -19,3 +19,10 @@ ASGARD_BUILD_PLAN v1.0 → v1.1 (isotope-traced: corpus harvest, 9 rules, securi
 
 ## N4 · BUILD electra-d0 (V) — this commit
 digest_lint.py (rules R1–R6/R8–R10) + Corpus A fixtures + adversarial tests + README.
+
+## N5 · F10 ENTRYPOINT HYGIENE (V) — 2026-10-11
+External smoke-test audit: router_seam.py destructured argv blindly — malformed invocations
+(flags, empty task/class) emitted plausible digests with exit 0, violating the DoD
+(2 = structural-malformation only) and the zero-trust axiom. Fix: guard empty/flag args → exit 2;
+same guard applied to slot_capture (empty decision) + digest_gen (flag arg). 6 new entrypoint
+fixtures (Corpus B gap closed: one fixture per RULE existed, none for the ENTRYPOINT).

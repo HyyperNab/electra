@@ -58,10 +58,13 @@ def verify(ledger=DEFAULT_LEDGER) -> tuple[bool, str]:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
+    args = sys.argv[1:]
+    if (len(args) < 2 or len(args) > 3
+            or not args[0].strip() or not args[1].strip()
+            or args[0].startswith("-") or args[1].startswith("-")):
         print("usage: slot_capture.py <decision> <agent> [digest_id]", file=sys.stderr)
         sys.exit(2)
-    decision, agent = sys.argv[1], sys.argv[2]
-    digest_id = sys.argv[3] if len(sys.argv) > 3 else ""
+    decision, agent = args[0], args[1]
+    digest_id = args[2] if len(args) > 2 else ""
     h = capture(decision, agent, digest_id)
     print(h)

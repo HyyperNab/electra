@@ -133,5 +133,35 @@ class TestRouterSeam(unittest.TestCase):
         self.assertEqual(r["engine"], "unavailable")
 
 
+class TestEntrypointHygiene(unittest.TestCase):
+    """F10: malformed entrypoint → exit 2, never plausible output."""
+    SEAM = ROOT / "electra" / "router_seam.py"
+    SLOT = ROOT / "electra" / "slot_capture.py"
+    GEN = ROOT / "electra" / "digest_gen.py"
+
+    def _rc(self, script, *args):
+        return subprocess.run(
+            [sys.executable, str(script), *args], capture_output=True, text=True
+        ).returncode
+
+    def test_seam_flag_arg_rejected(self):
+        self.assertEqual(self._rc(self.SEAM, "--text", "audit this codebase"), 2)
+
+    def test_seam_empty_task_rejected(self):
+        self.assertEqual(self._rc(self.SEAM, "", "code_audit"), 2)
+
+    def test_seam_empty_class_rejected(self):
+        self.assertEqual(self._rc(self.SEAM, "task", ""), 2)
+
+    def test_seam_extra_args_rejected(self):
+        self.assertEqual(self._rc(self.SEAM, "t", "c", "extra"), 2)
+
+    def test_slot_empty_decision_rejected(self):
+        self.assertEqual(self._rc(self.SLOT, "", "agent"), 2)
+
+    def test_digest_gen_flag_rejected(self):
+        self.assertEqual(self._rc(self.GEN, "--help"), 2)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

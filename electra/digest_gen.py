@@ -65,6 +65,9 @@ def generate(spec: dict) -> str:
 
 def main(argv: list[str]) -> int:
     if len(argv) > 1:
+        if argv[1].startswith("-"):
+            print("usage: digest_gen.py [spec.json] (or JSON on stdin)", file=sys.stderr)
+            return 2
         spec = json.load(open(argv[1]))
     else:
         spec = json.load(sys.stdin)

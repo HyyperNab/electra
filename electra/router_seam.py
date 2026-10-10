@@ -68,4 +68,10 @@ if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("usage: router_seam.py <task-description> <task-class>", file=sys.stderr)
         sys.exit(2)
-    print(json.dumps(seam(sys.argv[1], sys.argv[2]), indent=2))
+    task, cls = sys.argv[1], sys.argv[2]
+    # F10: malformed entrypoint → reject, never emit plausible output.
+    if (not task.strip() or not cls.strip()
+            or task.startswith("-") or cls.startswith("-")):
+        print("usage: router_seam.py <task-description> <task-class>", file=sys.stderr)
+        sys.exit(2)
+    print(json.dumps(seam(task, cls), indent=2))
