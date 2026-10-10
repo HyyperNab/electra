@@ -1,0 +1,2 @@
+{"agent": "doj", "decision": "approve electra-d1: generator + hook + slot + seam live", "digest_id": "electra-d1", "hash": "87d1520f2843d227", "prev": "", "ts": "2026-10-10T16:59:39.684605+00:00"}
+{"agent": "doj", "decision": "next queue: digest generator integration into real pipelines", "digest_id": "electra-d1", "hash": "58a8a69fab66ccd2", "prev": "87d1520f2843d227", "ts": "2026-10-10T16:59:39.728052+00:00"}
