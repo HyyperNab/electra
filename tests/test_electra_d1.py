@@ -120,6 +120,18 @@ class TestRouterSeam(unittest.TestCase):
         hits = router_seam.conductor_hits("zzz qqq unrelated", self.TABLE)
         self.assertEqual(hits, [])
 
+    def test_overseer_leg_subprocess_boundary(self):
+        fake = pathlib.Path("/tmp/_fake_overseer_cli.py")
+        fake.write_text(
+            "import json,sys\nprint(json.dumps({'engine': 'ema', 'domain': 'clinical_only'}))\n"
+        )
+        r = router_seam.overseer_route("patient numbness", cli=fake)
+        self.assertEqual(r["engine"], "ema")
+
+    def test_overseer_leg_fallback(self):
+        r = router_seam.overseer_route("anything", cli=pathlib.Path("/tmp/_missing_cli.py"))
+        self.assertEqual(r["engine"], "unavailable")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)
