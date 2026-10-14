@@ -1,8 +1,8 @@
 # CHAIN.md — ASGARD code repo decision chain (lions_mane replay file)
 
-@verify file:/home/doj/.config/xyz.chatboxapp.app/skills/ASGARD_SPEC.md
-@verify file:/home/doj/.config/xyz.chatboxapp.app/skills/ASGARD_BUILD_PLAN.md
-@verify file:/home/doj/.config/xyz.chatboxapp.app/skills/ASGARD_DIGEST_CORPUS.md
+@verify file:/home/doj/.config/xyz.chatboxapp.app/skills/asgard-os/ASGARD_SPEC.md
+@verify file:/home/doj/.config/xyz.chatboxapp.app/skills/asgard-os/ASGARD_BUILD_PLAN.md
+@verify file:/home/doj/.config/xyz.chatboxapp.app/skills/asgard-os/ASGARD_DIGEST_CORPUS.md
 
 ## N0 · ADR-001 (V) — 2026-10-10
 Spec persisted + manual probe collection chosen over linter-first (weighted score 0.915).
