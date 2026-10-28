@@ -123,10 +123,21 @@ class TestRouterSeam(unittest.TestCase):
     def test_overseer_leg_subprocess_boundary(self):
         fake = pathlib.Path("/tmp/_fake_overseer_cli.py")
         fake.write_text(
-            "import json,sys\nprint(json.dumps({'engine': 'ema', 'domain': 'clinical_only'}))\n"
+            "import json,sys\nprint(json.dumps({'task': 'x', 'domain': 'clinical_only', "
+            "'engine': 'ema', 'escalate': False}))\n"
         )
         r = router_seam.overseer_route("patient numbness", cli=fake)
         self.assertEqual(r["engine"], "ema")
+
+    def test_overseer_leg_contract_drift_rejected(self):
+        """Schema gate: output missing required keys must fail closed."""
+        fake = pathlib.Path("/tmp/_fake_overseer_cli.py")
+        fake.write_text(
+            "import json,sys\nprint(json.dumps({'engine': 'ema', 'domain': 'clinical_only'}))\n"
+        )
+        r = router_seam.overseer_route("patient numbness", cli=fake)
+        self.assertEqual(r["engine"], "unavailable")
+        self.assertIn("contract drift", r["reason"])
 
     def test_overseer_leg_fallback(self):
         r = router_seam.overseer_route("anything", cli=pathlib.Path("/tmp/_missing_cli.py"))

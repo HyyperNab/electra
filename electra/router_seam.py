@@ -8,14 +8,25 @@ Chains the three routers in ONE command:
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import re
 import subprocess
 import sys
 
-CONDUCTOR = pathlib.Path("~/.config/xyz.chatboxapp.app/skills/conductor/SKILL.md").expanduser()
-MASTER_JEDI = pathlib.Path("~/Desktop/Projects/master-jedi/master_jedi.py").expanduser()
-OVERSEER_CLI = pathlib.Path("~/Desktop/Projects/overseer/orchestrator/cli.py").expanduser()
+
+def _env_path(key: str, default: str) -> pathlib.Path:
+    """Env override with tilde-expanded default. E.g. OVERSEER_CLI_PATH.
+    Portability: moving the workspace only needs env vars, not code edits."""
+    return pathlib.Path(os.environ.get(key, default)).expanduser()
+
+
+CONDUCTOR = _env_path(
+    "CONDUCTOR_PATH", "~/.config/xyz.chatboxapp.app/skills/conductor/SKILL.md")
+MASTER_JEDI = _env_path(
+    "MASTER_JEDI_PATH", "~/Desktop/Projects/master-jedi/master_jedi.py")
+OVERSEER_CLI = _env_path(
+    "OVERSEER_CLI_PATH", "~/Desktop/Projects/overseer/orchestrator/cli.py")
 
 
 def conductor_hits(task: str, table_text: str, top: int = 3) -> list[dict]:
@@ -39,8 +50,13 @@ def master_jedi_recommend(task_class: str, mj=MASTER_JEDI) -> str:
     return r.stdout.strip() or f"(master-jedi unavailable: {r.stderr.strip()})"
 
 
+OVERSEER_ROUTE_KEYS = {"task", "domain", "engine", "escalate"}
+
+
 def overseer_route(task: str, cli=OVERSEER_CLI) -> dict:
-    """W1: overseer's callable mouth. Subprocess boundary; graceful fallback."""
+    """W1: overseer's callable mouth. Subprocess boundary; graceful fallback.
+    Schema-guarded: output missing required keys = contract drift, rejected
+    (fail-closed, never half-consumed)."""
     if not cli.exists():
         return {"engine": "unavailable", "reason": f"overseer CLI not found: {cli}"}
     r = subprocess.run(
@@ -49,9 +65,14 @@ def overseer_route(task: str, cli=OVERSEER_CLI) -> dict:
     if r.returncode != 0:
         return {"engine": "unavailable", "reason": (r.stderr or "error").strip()[:200]}
     try:
-        return json.loads(r.stdout)
+        data = json.loads(r.stdout)
     except json.JSONDecodeError:
         return {"engine": "unavailable", "reason": "unparseable overseer output"}
+    missing = OVERSEER_ROUTE_KEYS - data.keys()
+    if missing:
+        return {"engine": "unavailable",
+                "reason": f"overseer contract drift — missing keys: {sorted(missing)}"}
+    return data
 
 
 def seam(task: str, task_class: str) -> dict:
