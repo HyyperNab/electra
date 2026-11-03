@@ -21,8 +21,8 @@ def _resolve(key: str, candidates, legacy=None) -> pathlib.Path:
     if os.environ.get(key):
         return pathlib.Path(os.environ[key]).expanduser()
     root = pathlib.Path(os.environ.get("PROJECTS_ROOT", "~/Desktop/Projects")).expanduser()
-    for c in candidates:
-        p = root / c
+    searched = [root / c for c in candidates]
+    for p in searched:
         if p.exists():
             return p
     if legacy and os.environ.get("ALLOW_LEGACY_CHATBOX") == "1":
@@ -30,9 +30,12 @@ def _resolve(key: str, candidates, legacy=None) -> pathlib.Path:
         if p.exists():
             print("USING_LEGACY_CHATBOX_PATH: %s" % p, file=sys.stderr)
             return p
+    checked = ", ".join(str(s) for s in searched)
+    legacy_note = " legacy=%s" % legacy if legacy else ""
     raise FileNotFoundError(
-        "UNRESOLVED:%s searched=%s root=%s (set %s, PROJECTS_ROOT, or ALLOW_LEGACY_CHATBOX=1)"
-        % (key, candidates, root, key))
+        "UNRESOLVED:%s checked=[%s]%s root=%s "
+        "(set %s, PROJECTS_ROOT, or ALLOW_LEGACY_CHATBOX=1)"
+        % (key, checked, legacy_note, root, key))
 
 
 CONDUCTOR = _resolve("CONDUCTOR_PATH", ["cognitive-skills/conductor/SKILL.md"],
@@ -54,11 +57,22 @@ def conductor_hits(task: str, table_text: str, top: int = 3) -> list[dict]:
     return [{"overlap": s[0], "description": s[1], "skill": s[2]} for s in scored[:top]]
 
 
+def _subprocess_timeout() -> float:
+    """ROUTE-001: bound every subprocess call; a hung CLI must not hang the seam."""
+    try:
+        t = float(os.environ.get("ROUTE_SUBPROCESS_TIMEOUT", "10"))
+        return t if t > 0 else 10.0
+    except ValueError:
+        return 10.0
+
+
 def master_jedi_recommend(task_class: str, mj=MASTER_JEDI) -> str:
-    r = subprocess.run(
-        [sys.executable, str(mj), "recommend", "--task-class", task_class],
-        capture_output=True, text=True,
-    )
+    cmd = [sys.executable, str(mj), "recommend", "--task-class", task_class]
+    t = _subprocess_timeout()
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=t)
+    except subprocess.TimeoutExpired:
+        return f"(master-jedi timeout after {t:g}s: {' '.join(cmd)})"
     return r.stdout.strip() or f"(master-jedi unavailable: {r.stderr.strip()})"
 
 
@@ -71,9 +85,13 @@ def overseer_route(task: str, cli=OVERSEER_CLI) -> dict:
     (fail-closed, never half-consumed)."""
     if not cli.exists():
         return {"engine": "unavailable", "reason": f"overseer CLI not found: {cli}"}
-    r = subprocess.run(
-        [sys.executable, str(cli), task], capture_output=True, text=True
-    )
+    cmd = [sys.executable, str(cli), task]
+    t = _subprocess_timeout()
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=t)
+    except subprocess.TimeoutExpired:
+        return {"engine": "unavailable",
+                "reason": f"overseer CLI timeout after {t:g}s: {' '.join(cmd)}"}
     if r.returncode != 0:
         return {"engine": "unavailable", "reason": (r.stderr or "error").strip()[:200]}
     try:
