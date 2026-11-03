@@ -15,18 +15,30 @@ import subprocess
 import sys
 
 
-def _env_path(key: str, default: str) -> pathlib.Path:
-    """Env override with tilde-expanded default. E.g. OVERSEER_CLI_PATH.
-    Portability: moving the workspace only needs env vars, not code edits."""
-    return pathlib.Path(os.environ.get(key, default)).expanduser()
+def _resolve(key: str, candidates, legacy=None) -> pathlib.Path:
+    """Env override -> workspace discovery -> legacy (gated). Fail closed with
+    the searched list: never silently guess (zero-trust audit 2026-11-03)."""
+    if os.environ.get(key):
+        return pathlib.Path(os.environ[key]).expanduser()
+    root = pathlib.Path(os.environ.get("PROJECTS_ROOT", "~/Desktop/Projects")).expanduser()
+    for c in candidates:
+        p = root / c
+        if p.exists():
+            return p
+    if legacy and os.environ.get("ALLOW_LEGACY_CHATBOX") == "1":
+        p = pathlib.Path(legacy).expanduser()
+        if p.exists():
+            print("USING_LEGACY_CHATBOX_PATH: %s" % p, file=sys.stderr)
+            return p
+    raise FileNotFoundError(
+        "UNRESOLVED:%s searched=%s root=%s (set %s, PROJECTS_ROOT, or ALLOW_LEGACY_CHATBOX=1)"
+        % (key, candidates, root, key))
 
 
-CONDUCTOR = _env_path(
-    "CONDUCTOR_PATH", "~/.config/xyz.chatboxapp.app/skills/conductor/SKILL.md")
-MASTER_JEDI = _env_path(
-    "MASTER_JEDI_PATH", "~/Desktop/Projects/master-jedi/master_jedi.py")
-OVERSEER_CLI = _env_path(
-    "OVERSEER_CLI_PATH", "~/Desktop/Projects/overseer/orchestrator/cli.py")
+CONDUCTOR = _resolve("CONDUCTOR_PATH", ["cognitive-skills/conductor/SKILL.md"],
+                     "~/.config/xyz.chatboxapp.app/skills/conductor/SKILL.md")
+MASTER_JEDI = _resolve("MASTER_JEDI_PATH", ["master-jedi/master_jedi.py"])
+OVERSEER_CLI = _resolve("OVERSEER_CLI_PATH", ["overseer/orchestrator/cli.py"])
 
 
 def conductor_hits(task: str, table_text: str, top: int = 3) -> list[dict]:

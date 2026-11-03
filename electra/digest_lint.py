@@ -17,7 +17,8 @@ MAX_LINES = 500
 REGISTER_ORDER = {"PROBE": 0, "I": 1, "SYSTEM": 2, "SLOT": 3}
 KNOWN = set(REGISTER_ORDER)
 PRE_V1_TOKENS = {"DIGEST", "GATE", "ACTION", "STATE", "GAINED", "RISK", "NEXT"}
-ALLOWLIST_ROOTS = ("~/Desktop/Projects", "~/.config/xyz.chatboxapp.app/skills")
+_ALLOW_RAW = os.environ.get("DIGEST_ALLOWLIST_ROOTS", "~/Desktop/Projects:~/.config/xyz.chatboxapp.app/skills")
+ALLOWLIST_ROOTS = tuple(_ALLOW_RAW.split(":"))
 ACTION_WORDS = {
     "build", "run", "check", "verify", "freeze", "push", "persist", "write", "decide",
     "confirm", "answer", "delete", "keep", "arm", "do", "next", "none", "done", "lock",
