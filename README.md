@@ -30,6 +30,7 @@ ideation 1.5 · code/ops 1.0 · strategy 0.7 · clinical/legal/manuscripts **0.3
 - `electra/loop_hook.py` — hooks into pipeline-complete / gate-verdict / invocation events.
 - `electra/slot_capture.py` — captures human decisions, logs them as attested inputs.
 - `electra/router_seam.py` — subprocess boundary seam: conductor + master-jedi + overseer converge for code_audit.
+- `electra/resolver.py` — unified path resolver (electra-d2): env → discovery → gated legacy, fail-closed with searched-list errors. Single Python implementation; the moac JS sibling honors the same contract (see resolver.py docstring).
 - `tests/` — Corpus A (real session digests) + Corpus B (adversarial, one per F-fix + edge cases) + determinism test.
 
 ```bash

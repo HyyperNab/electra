@@ -4,44 +4,22 @@ Chains the three routers in ONE command:
   1. conductor — authoritative table scan (keyword overlap, deterministic ranking)
   2. master-jedi — learned Bayesian recommendation (subprocess boundary)
   3. overseer — engine-level routing via its W1 CLI (subprocess; graceful fallback)
+
+Path resolution is delegated to electra.resolver (unified discovery contract);
+this module owns routing logic only.
 """
 from __future__ import annotations
 
 import json
 import os
-import pathlib
 import re
 import subprocess
 import sys
 
-
-def _resolve(key: str, candidates, legacy=None) -> pathlib.Path:
-    """Env override -> workspace discovery -> legacy (gated). Fail closed with
-    the searched list: never silently guess (zero-trust audit 2026-11-03)."""
-    if os.environ.get(key):
-        return pathlib.Path(os.environ[key]).expanduser()
-    root = pathlib.Path(os.environ.get("PROJECTS_ROOT", "~/Desktop/Projects")).expanduser()
-    searched = [root / c for c in candidates]
-    for p in searched:
-        if p.exists():
-            return p
-    if legacy and os.environ.get("ALLOW_LEGACY_CHATBOX") == "1":
-        p = pathlib.Path(legacy).expanduser()
-        if p.exists():
-            print("USING_LEGACY_CHATBOX_PATH: %s" % p, file=sys.stderr)
-            return p
-    checked = ", ".join(str(s) for s in searched)
-    legacy_note = " legacy=%s" % legacy if legacy else ""
-    raise FileNotFoundError(
-        "UNRESOLVED:%s checked=[%s]%s root=%s "
-        "(set %s, PROJECTS_ROOT, or ALLOW_LEGACY_CHATBOX=1)"
-        % (key, checked, legacy_note, root, key))
-
-
-CONDUCTOR = _resolve("CONDUCTOR_PATH", ["cognitive-skills/conductor/SKILL.md"],
-                     "~/.config/xyz.chatboxapp.app/skills/conductor/SKILL.md")
-MASTER_JEDI = _resolve("MASTER_JEDI_PATH", ["master-jedi/master_jedi.py"])
-OVERSEER_CLI = _resolve("OVERSEER_CLI_PATH", ["overseer/orchestrator/cli.py"])
+try:  # module context (tests, imports)
+    from electra.resolver import CONDUCTOR, MASTER_JEDI, OVERSEER_CLI
+except ImportError:  # script context (python3 electra/router_seam.py)
+    from resolver import CONDUCTOR, MASTER_JEDI, OVERSEER_CLI
 
 
 def conductor_hits(task: str, table_text: str, top: int = 3) -> list[dict]:
