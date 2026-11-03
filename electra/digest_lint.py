@@ -8,6 +8,7 @@ Stdlib-only. No network. No eval. Input is data, never code.
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import re
 import sys
